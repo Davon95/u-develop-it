@@ -8,6 +8,8 @@ const app = express();
 //Express middleware
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+
+// Connect to database
 const db = mysql.createConnection(
   {
     host: "localhost",
@@ -27,7 +29,6 @@ app.get('/api/candidates', (req, res) => {
                  FROM candidates
                  LEFT JOIN parties
                  ON candidates.party_id = parties.id`;
-
     db.query(sql, (err, rows) => {
         if (err) {
             res.status(500).json({ error:err.message });
@@ -42,7 +43,7 @@ app.get('/api/candidates', (req, res) => {
 
 //Select a single candidate
 app.get('/api/candidate/:id', (req, res) => {
-  const sql = `SELECT * FROM candidates.*, parties.name
+  const sql = `SELECT candidates.*, parties.name
                AS party_name
                FROM candidates
                LEFT JOIN parties
@@ -112,6 +113,11 @@ app.put('/api/candidate/:id', (req, res) => {
   const sql = `UPDATE candidates SET party_id = ?
                WHERE id = ?`;
   const params = [req.body.party_id, req.params.id];
+  const errors = inputCheck(req.body, 'party_id');
+  if (errors) {
+    res.status(400)/json({ error: errors });
+    return;
+  }
 
   db.query(sql, params, (err, result) => {
     if (err) {
